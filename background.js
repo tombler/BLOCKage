@@ -4,7 +4,7 @@
 // var fb_in_session = false;
 // var fb_session_start;
 // var fb_session_end;
-// var all_tab_info = {};
+// var globals.all_tab_info = {};
 
 
 // function start_session(history_item) {
@@ -25,11 +25,11 @@
 // }
 
 // function close_session(tabId,removeInfo) {
-//     if (!all_tab_info.hasOwnProperty(tabId)) {
+//     if (!globals.all_tab_info.hasOwnProperty(tabId)) {
 //         return
 //     }
 
-//     if (gmail_in_session && all_tab_info[tabId].url.includes('mail.google.com')) {
+//     if (gmail_in_session && globals.all_tab_info[tabId].url.includes('mail.google.com')) {
 //         gmail_in_session = false;
 //         gmail_session_end = new Date();
 //         var st = calculate_session_time(gmail_session_start,gmail_session_end);
@@ -41,7 +41,7 @@
 //         console.log("Gmail session ended!");
 //     }
 
-//     if (fb_in_session && all_tab_info[tabId].url.includes('facebook.com')) {
+//     if (fb_in_session && globals.all_tab_info[tabId].url.includes('facebook.com')) {
 //         fb_in_session = false;
 //         fb_session_end = new Date();
 //         var st = calculate_session_time(fb_session_start,fb_session_end);
@@ -57,7 +57,7 @@
 // function collect_tabs(tabId, changeInfo, tab) {
 //     // Note: this event is fired twice:
 //     // Once with `changeInfo.status` = "loading" and another time with "complete"
-//     all_tab_info[tabId] = tab;
+//     globals.all_tab_info[tabId] = tab;
 // }
 
 // function calculate_session_time(session_start,session_end) {
@@ -84,7 +84,7 @@
 
 
 // // Clean up:
-// // clear all_tab_info every day
+// // clear globals.all_tab_info every day
 
 
 
@@ -106,9 +106,12 @@
 // }
 
 
-//globals
-var baseUrl = 'http://localhost:3000';
-
+//globals - put in config file
+globals = {};
+globals.baseUrl = 'http://localhost:3000';
+globals.all_tab_info = {};
+globals.currentSessions = [];
+globals.trackedApplications = [];
 
 // functions
 function getRandomToken() {
@@ -123,9 +126,23 @@ function getRandomToken() {
     return hex;
 }
 
+// http://stackoverflow.com/questions/19700283/how-to-convert-time-milliseconds-to-hours-min-sec-format-in-javascript
+function msToTime(duration) {
+    var milliseconds = parseInt((duration%1000)/100)
+        , seconds = parseInt((duration/1000)%60)
+        , minutes = parseInt((duration/(1000*60))%60)
+        , hours = parseInt((duration/(1000*60*60))%24);
+
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
+}
+
 //To do: refactor authUser,getUserApps, addApp to common func
 function authUser(userData) {
-    var url = baseUrl+'/api/1.0/user'; 
+    var url = globals.baseUrl+'/api/1.0/extension'; 
     var http = new XMLHttpRequest();
     var data = JSON.stringify(userData)
     http.open("POST", url, true);
@@ -143,8 +160,12 @@ function authUser(userData) {
     http.send(data);
 }
 
+// Add session tracker to this, e.g.
+// Sessions today: 3
+// In session: Yes
+// Active time: 00:00:35
 function getUserApps(userid) {
-    var url = baseUrl+'/api/1.0/app?userid='+userid; 
+    var url = globals.baseUrl+'/api/1.0/application?extension_id='+userid; 
     var http = new XMLHttpRequest();
     http.open("GET", url, true);
     http.setRequestHeader("Accept", "application/json");
@@ -158,8 +179,23 @@ function getUserApps(userid) {
     http.send(null);
 }
 
+function setUserApps(userid) {
+    var url = globals.baseUrl+'/api/1.0/application?extension_id='+userid; 
+    var http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.setRequestHeader("Accept", "application/json");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            globals.trackedApplications = res.data;
+        }
+    }
+    http.send(null);
+}
+
 function addApp(appData) {
-    var url = baseUrl+'/api/1.0/app'; 
+    var url = globals.baseUrl+'/api/1.0/application'; 
     var http = new XMLHttpRequest();
     var data = JSON.stringify(appData);
     http.open("POST", url, true);
@@ -174,20 +210,75 @@ function addApp(appData) {
     http.send(data);
 }
 
-function startSession() {
-    // set flag on app DB object? or just locally?
+function saveSession(session) {
+    var url = globals.baseUrl+'/api/1.0/session'; 
+    var http = new XMLHttpRequest();
+    var data = JSON.stringify(session);
+    http.open("POST", url, true);
+    http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            // any reason to send resp to DOM?
+            // chrome.runtime.sendMessage(res);
+            console.log(res);
+        }
+    }
+    http.send(data);
 }
 
-function stopSession() {
+function startSession(history_item) {
+    for (var i = 0; i < globals.trackedApplications.length; i++) {
+        if (history_item.url.includes(globals.trackedApplications[i].url) && !globals.trackedApplications[i].in_session) {
+            console.log('started');
+            globals.trackedApplications[i].in_session = true;
+            globals.trackedApplications[i].session_start = new Date();
+        }
+    };
+}
+
+function collect_tabs(tabId, changeInfo, tab) {
+    // Note: this event is fired twice:
+    // Once with `changeInfo.status` = "loading" and another time with "complete"
+    globals.all_tab_info[tabId] = tab;
+}
+
+function stopSession(tabId,removeInfo) {
     // calculate time
     // create session in db w/ start time + end time + duration
+    if (!globals.all_tab_info.hasOwnProperty(tabId)) {
+        return
+    }
+    for (var i = 0; i < globals.trackedApplications.length; i++) {
+        if (globals.all_tab_info[tabId].url.includes(globals.trackedApplications[i].url) && globals.trackedApplications[i].in_session) {
+            var start = globals.trackedApplications[i].session_start;
+            var stop = new Date();
+            var duration = msToTime(stop - start);
+            var application_id = globals.trackedApplications[i].id;
+            var session = {
+                start: start,
+                stop: stop,
+                duration: duration,
+                application_id: application_id
+            }
+            globals.trackedApplications[i].in_session = false;
+            globals.trackedApplications[i].session_start = null;
+
+            // retrieve the extension ID so we can add it to the session info, then save
+            chrome.storage.sync.get('userid', function(items) {
+                var userid = items.userid;
+                session.extension_id = userid;
+                // console.log(session)
+                saveSession(session);
+            });
+        }
+    };
 }
-
-
 
 // Execution/Listeners
 
-
+// popup.html DOM interactions
 chrome.extension.onMessage.addListener(function(message, messageSender, sendResponse) {
     if (message.msg === 'getApps') {
         chrome.storage.sync.get('userid', function(items) {
@@ -209,9 +300,9 @@ chrome.extension.onMessage.addListener(function(message, messageSender, sendResp
     }
 });
 
-// Get user's extension ID on startup
-// If it doesn't exist in the DB, backend will create it
+// Startup functions
 chrome.storage.sync.get('userid', function(items) {
+    // auth the user, which will create one if it doesn't exist
     var userid = items.userid;
     if (userid) {
         var userData = {extension_id: userid};
@@ -223,6 +314,15 @@ chrome.storage.sync.get('userid', function(items) {
             authUser(userData);
         });
     }
+    // Set that user's apps to begin tracking immediately
+    setUserApps(userid);
 });
+
+// listeners for tracking sessions
+chrome.tabs.onUpdated.addListener(collect_tabs);
+chrome.history.onVisited.addListener(startSession);
+chrome.tabs.onRemoved.addListener(stopSession);
+
+
 
 
