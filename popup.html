@@ -6,11 +6,12 @@
  -->
 <html>
   <head>
-    <title>Getting Started Extension's Popup</title>
+    <title>Total BLOCKage</title>
     <style>
       body {
         font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
         font-size: 100%;
+        width: 500px;
       }
     </style>
     <!--
@@ -19,11 +20,73 @@
       -
       - [1]: https://developer.chrome.com/extensions/contentSecurityPolicy
      -->
-    <script src="popup.js"></script>
+    <link rel="stylesheet" href="vendor/bootstrap4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="vendor/font-awesome-4.7.0/css/font-awesome.min.css">
   </head>
   <body>
-    <div>Total times visited Facebook:</div>
-    <div>Total times visited Gmail:</div>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div id="accordion" role="tablist" aria-multiselectable="true">
+            <div class="card">
+              <div class="card-header" role="tab" id="headingMyApps">
+                <h5 class="mb-0">
+                  <a id="myAppsAnchor" data-toggle="collapse" data-parent="#accordion" href="#collapseMyApps" aria-expanded="true" aria-controls="collapseMyApps">
+                    My Tracked Sites
+                  </a>
+                </h5>
+              </div>
+
+              <div id="collapseMyApps" class="collapse show" role="tabpanel" aria-labelledby="headingMyApps">
+                <div class="card-block">
+                  <div id="myapps">
+                    
+                  </div>
+                  <div class="text-center">
+                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseAddApp" aria-expanded="false" aria-controls="collapseAddApp">
+                      <i class="fa fa-plus-square-o fa-3x" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div> <!-- cardblock -->
+              </div> <!-- collapseMyApps -->
+            </div> <!-- card -->
+
+            <div class="card">
+              <div class="card-header" role="tab" id="headingAddApp">
+                <h5 class="mb-0">
+                  <a data-toggle="collapse" data-parent="#accordion" href="#collapseAddApp" aria-expanded="false" aria-controls="collapseAddApp">
+                    Add a Site
+                  </a>
+                </h5>
+              </div>
+
+              <div id="collapseAddApp" class="collapse" role="tabpanel" aria-labelledby="headingAddApp">
+                <div class="card-block">
+                  <form>
+                    <div class="form-group">
+                      <label for="site_name">Nickname</label>
+                      <input type="text" class="form-control" id="site_name" aria-describedby="site_name_help">
+                      <small id="site_name_help" class="form-text text-muted">Common name for the site, e.g. "Facebook"</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="site_url">URL</label>
+                      <input type="text" class="form-control" id="site_url" aria-describedby="url_help">
+                      <small id="url_help" class="form-text text-muted">Base URL minus http:// or https://, e.g. "facebook.com"</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="addApp">Track It!</button>
+                  </form>
+                </div> <!-- cardblock -->
+              </div> <!-- collapseAddApp -->
+            </div> <!-- card -->
+          </div> <!-- accordion -->
+        </div> <!-- col-12 -->
+      </div> <!-- row -->
+    </div> <!-- container -->
+    <script src="vendor/jquery-3.2.1.min.js"></script>
+    <script src="vendor/tether.min.js"></script>
+    <script src="vendor/bootstrap4/js/bootstrap.min.js"></script>
+    <script src="popup.js">
+    </script>
   </body>
 </html>
 
