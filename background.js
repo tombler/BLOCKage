@@ -1,109 +1,13 @@
-// var gmail_in_session = false;
-// var gmail_session_start;
-// var gmail_session_end;
-// var fb_in_session = false;
-// var fb_session_start;
-// var fb_session_end;
-// var globals.all_tab_info = {};
-
-
-// function start_session(history_item) {
-//     if (!gmail_in_session && history_item.url.includes('mail.google.com')) {
-//         gmail_in_session = true;
-//         gmail_session_start = new Date();
-//         // nullify old session end time if there was one.
-//         gmail_session_end = null;
-//         console.log("Gmail session started!");
-//     }
-//     if (!fb_in_session && history_item.url.includes('facebook.com')) {
-//         fb_in_session = true;
-//         fb_session_start = new Date();
-//         // nullify old session end time if there was one.
-//         fb_session_end = null;
-//         console.log("Facebook session started!");
-//     }
-// }
-
-// function close_session(tabId,removeInfo) {
-//     if (!globals.all_tab_info.hasOwnProperty(tabId)) {
-//         return
-//     }
-
-//     if (gmail_in_session && globals.all_tab_info[tabId].url.includes('mail.google.com')) {
-//         gmail_in_session = false;
-//         gmail_session_end = new Date();
-//         var st = calculate_session_time(gmail_session_start,gmail_session_end);
-//         console.log("SESSION TIME:",msToTime(st));
-//         alert("Your gmail session time was "+msToTime(st));
-//         // Hit some sort of data store to track session times
-//         // log_session_time(st);
-//         gmail_session_end = new Date();
-//         console.log("Gmail session ended!");
-//     }
-
-//     if (fb_in_session && globals.all_tab_info[tabId].url.includes('facebook.com')) {
-//         fb_in_session = false;
-//         fb_session_end = new Date();
-//         var st = calculate_session_time(fb_session_start,fb_session_end);
-//         console.log("SESSION TIME:",msToTime(st));
-//         alert("Your Facebook session time was "+msToTime(st));
-//         // Hit some sort of data store to track session times
-//         // log_session_time(st);
-//         fb_session_end = new Date();
-//         console.log("Facebook session ended!");
-//     }
-// }
-
-// function collect_tabs(tabId, changeInfo, tab) {
-//     // Note: this event is fired twice:
-//     // Once with `changeInfo.status` = "loading" and another time with "complete"
-//     globals.all_tab_info[tabId] = tab;
-// }
-
-// function calculate_session_time(session_start,session_end) {
-//     return Math.abs(session_end - session_start);
-// }
-
-// // http://stackoverflow.com/questions/19700283/how-to-convert-time-milliseconds-to-hours-min-sec-format-in-javascript
-// function msToTime(duration) {
-//     var milliseconds = parseInt((duration%1000)/100)
-//         , seconds = parseInt((duration/1000)%60)
-//         , minutes = parseInt((duration/(1000*60))%60)
-//         , hours = parseInt((duration/(1000*60*60))%24);
-
-//     hours = (hours < 10) ? "0" + hours : hours;
-//     minutes = (minutes < 10) ? "0" + minutes : minutes;
-//     seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-//     return hours + ":" + minutes + ":" + seconds;
-// }
-
-// chrome.tabs.onUpdated.addListener(collect_tabs);
-// chrome.history.onVisited.addListener(start_session);
-// chrome.tabs.onRemoved.addListener(close_session);
-
-
-// // Clean up:
-// // clear globals.all_tab_info every day
-
-
-
-// function start_session(history_item) {
-//     if (!gmail_in_session && history_item.url.includes('mail.google.com')) {
-//         gmail_in_session = true;
-//         gmail_session_start = new Date();
-//         // nullify old session end time if there was one.
-//         gmail_session_end = null;
-//         console.log("Gmail session started!");
-//     }
-//     if (!fb_in_session && history_item.url.includes('facebook.com')) {
-//         fb_in_session = true;
-//         fb_session_start = new Date();
-//         // nullify old session end time if there was one.
-//         fb_session_end = null;
-//         console.log("Facebook session started!");
-//     }
-// }
+// TO DO:
+    // - Change getApps() to return local globals.trackedApplications
+    // - Add locally-stored live session info to DOM on popup, e.g.
+        // Sessions today: 3
+        // In session: Yes
+        // Active time: 00:00:35
+    // - Clear "Add a Site" form inputs on submission
+    // - Session history/analytics tab
+        // queries
+        // graph
 
 
 //globals - put in config file
@@ -160,11 +64,7 @@ function authUser(userData) {
     http.send(data);
 }
 
-// Add session tracker to this, e.g.
-// Sessions today: 3
-// In session: Yes
-// Active time: 00:00:35
-function getUserApps(userid) {
+function getUserApps(userid,init=false) {
     var url = globals.baseUrl+'/api/1.0/application?extension_id='+userid; 
     var http = new XMLHttpRequest();
     http.open("GET", url, true);
@@ -174,21 +74,11 @@ function getUserApps(userid) {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
             chrome.runtime.sendMessage(res);
-        }
-    }
-    http.send(null);
-}
 
-function setUserApps(userid) {
-    var url = globals.baseUrl+'/api/1.0/application?extension_id='+userid; 
-    var http = new XMLHttpRequest();
-    http.open("GET", url, true);
-    http.setRequestHeader("Accept", "application/json");
-    http.onreadystatechange = function()
-    {
-        if(http.readyState == 4 && http.status == 200) {
-            var res = JSON.parse(http.responseText);
-            globals.trackedApplications = res.data;
+            // extension is starting up, set global
+            if (init) {
+                globals.trackedApplications = res.data;
+            }
         }
     }
     http.send(null);
@@ -269,7 +159,6 @@ function stopSession(tabId,removeInfo) {
             chrome.storage.sync.get('userid', function(items) {
                 var userid = items.userid;
                 session.extension_id = userid;
-                // console.log(session)
                 saveSession(session);
             });
         }
@@ -315,7 +204,7 @@ chrome.storage.sync.get('userid', function(items) {
         });
     }
     // Set that user's apps to begin tracking immediately
-    setUserApps(userid);
+    getUserApps(userid,true);
 });
 
 // listeners for tracking sessions
