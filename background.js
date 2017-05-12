@@ -1,5 +1,8 @@
 // TO DO:
     // - Change getApps() to return local globals.trackedApplications
+        // 1. Extension loads: get all user apps from the db
+        // 2. Popup loads: get all user apps from locally-stored
+        // 3. User adds app: save to db, reload all user apps from db and store locally
     // - Add locally-stored live session info to DOM on popup, e.g.
         // Sessions today: 3
         // In session: Yes
@@ -64,7 +67,22 @@ function authUser(userData) {
     http.send(data);
 }
 
-function getUserApps(userid,init=false) {
+function getUserApps(userid,from_db=false,sendResponse=null) {
+    if (!from_db) {
+        // fake ajax
+        var res = {
+            status: 'success',
+            data: globals.trackedApplications,
+            message: 'getApps'
+        }
+        if (sendResponse !== null) {
+            console.log("Resp sent, data loaded from local storage");
+            sendResponse(res);
+        }
+        return
+    }
+
+    // Otherwise grab from DB
     var url = globals.baseUrl+'/api/1.0/application?extension_id='+userid; 
     var http = new XMLHttpRequest();
     http.open("GET", url, true);
@@ -73,18 +91,17 @@ function getUserApps(userid,init=false) {
     {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
-            chrome.runtime.sendMessage(res);
-
-            // extension is starting up, set global
-            if (init) {
-                globals.trackedApplications = res.data;
+            if (sendResponse !== null) {
+                console.log("Resp sent, data loaded from DB");
+                sendResponse(res);
             }
+            globals.trackedApplications = res.data;
         }
     }
     http.send(null);
 }
 
-function addApp(appData) {
+function addApp(appData,sendResponse) {
     var url = globals.baseUrl+'/api/1.0/application'; 
     var http = new XMLHttpRequest();
     var data = JSON.stringify(appData);
@@ -94,7 +111,8 @@ function addApp(appData) {
     {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
-            chrome.runtime.sendMessage(res);
+            // must reload from DB, so 2nd arg = true
+            getUserApps(appData.extension_id,true,sendResponse);
         }
     }
     http.send(data);
@@ -169,10 +187,13 @@ function stopSession(tabId,removeInfo) {
 
 // popup.html DOM interactions
 chrome.extension.onMessage.addListener(function(message, messageSender, sendResponse) {
+    // called when popup.html is opened
     if (message.msg === 'getApps') {
         chrome.storage.sync.get('userid', function(items) {
             var userid = items.userid;
-            getUserApps(userid);
+            // get apps from local storage to avoid DB call
+            // pass sendResponse so getUserApps() can send the data to popup.js after loading
+            getUserApps(userid,false,sendResponse);
         });
     }
 
@@ -184,9 +205,12 @@ chrome.extension.onMessage.addListener(function(message, messageSender, sendResp
                 url: message.data.url,
                 extension_id: userid
             }
-            addApp(appData);
+            addApp(appData, sendResponse);
         });
     }
+
+    // Needed in order to keep message channel open until sendResponse is triggered
+    return true;
 });
 
 // Startup functions
@@ -204,6 +228,8 @@ chrome.storage.sync.get('userid', function(items) {
         });
     }
     // Set that user's apps to begin tracking immediately
+    // No need to sendResponse to DOM b/c popup.html isn't open yet
+    // We just want to store the apps locally so we can track them
     getUserApps(userid,true);
 });
 
