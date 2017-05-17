@@ -1,16 +1,19 @@
 // TO DO:
-    // - Change getApps() to return local globals.trackedApplications
-        // 1. Extension loads: get all user apps from the db
-        // 2. Popup loads: get all user apps from locally-stored
-        // 3. User adds app: save to db, reload all user apps from db and store locally
     // - Add locally-stored live session info to DOM on popup, e.g.
         // Sessions today: 3
         // In session: Yes
         // Active time: 00:00:35
+    // Add "pause" functionality to sessions, e.g. site is open but tab is not active
     // - Clear "Add a Site" form inputs on submission
     // - Session history/analytics tab
         // queries
         // graph
+
+// DONE:
+    // - Change getApps() to return local globals.trackedApplications
+        // 1. Extension loads: get all user apps from the db
+        // 2. Popup loads: get all user apps from locally-stored
+        // 3. User adds app: save to db, reload all user apps from db and store locally
 
 
 //globals - put in config file
@@ -19,6 +22,7 @@ globals.baseUrl = 'http://localhost:3000';
 globals.all_tab_info = {};
 globals.currentSessions = [];
 globals.trackedApplications = [];
+globals.userSessions = [];
 
 // functions
 function getRandomToken() {
@@ -93,6 +97,7 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
             var res = JSON.parse(http.responseText);
             if (sendResponse !== null) {
                 console.log("Resp sent, data loaded from DB");
+                console.log(res);
                 sendResponse(res);
             }
             globals.trackedApplications = res.data;
@@ -118,7 +123,33 @@ function addApp(appData,sendResponse) {
     http.send(data);
 }
 
-function saveSession(session) {
+function updateApp(appData,sendResponse=null) {
+    var url = globals.baseUrl+'/api/1.0/application/update'; 
+    var http = new XMLHttpRequest();
+    var data = JSON.stringify(appData);
+    http.open("POST", url, true);
+    http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            // Run getUserApps() as a callback on success
+            // must reload from DB, so 2nd arg = true
+            if (sendResponse === null) {
+                // Scenario 1: updating app with in_session = true or false
+                    // sendResponse fires but goes nowhere b/c popup.html isn't open
+                getUserApps(appData.extension_id,true);    
+            } else {
+                // Scenario 2: updating app with new name or url from popup.html DOM
+                    // sendResponse fires updated app data back to DOM
+                getUserApps(appData.extension_id,true,sendResponse);
+            }
+        }
+    }
+    http.send(data);
+}
+
+function saveSession(session,appData) {
     var url = globals.baseUrl+'/api/1.0/session'; 
     var http = new XMLHttpRequest();
     var data = JSON.stringify(session);
@@ -128,9 +159,8 @@ function saveSession(session) {
     {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
-            // any reason to send resp to DOM?
-            // chrome.runtime.sendMessage(res);
-            console.log(res);
+            updateApp(appData);
+            globals.userSessions = res.data;
         }
     }
     http.send(data);
@@ -139,9 +169,13 @@ function saveSession(session) {
 function startSession(history_item) {
     for (var i = 0; i < globals.trackedApplications.length; i++) {
         if (history_item.url.includes(globals.trackedApplications[i].url) && !globals.trackedApplications[i].in_session) {
-            console.log('started');
+            // onVisited fires multiple times for a site ("fake page loads")
+            // setting in_session here ensures we only start one session for this app and user at a time
+            var now = new Date();
             globals.trackedApplications[i].in_session = true;
-            globals.trackedApplications[i].session_start = new Date();
+            globals.trackedApplications[i].session_start = now;
+            updateApp(globals.trackedApplications[i]);
+            // no need to save session b/c it's not complete, no end time
         }
     };
 }
@@ -160,27 +194,58 @@ function stopSession(tabId,removeInfo) {
     }
     for (var i = 0; i < globals.trackedApplications.length; i++) {
         if (globals.all_tab_info[tabId].url.includes(globals.trackedApplications[i].url) && globals.trackedApplications[i].in_session) {
-            var start = globals.trackedApplications[i].session_start;
+            var start = new Date(globals.trackedApplications[i].session_start);
             var stop = new Date();
             var duration = msToTime(stop - start);
             var application_id = globals.trackedApplications[i].id;
+            var extension_id = globals.trackedApplications[i].extension_id;
             var session = {
                 start: start,
                 stop: stop,
                 duration: duration,
-                application_id: application_id
+                application_id: application_id,
+                extension_id: extension_id
             }
             globals.trackedApplications[i].in_session = false;
             globals.trackedApplications[i].session_start = null;
-
-            // retrieve the extension ID so we can add it to the session info, then save
-            chrome.storage.sync.get('userid', function(items) {
-                var userid = items.userid;
-                session.extension_id = userid;
-                saveSession(session);
-            });
+            // pass app data to saveSession to run updateApp() as a callback on success
+            saveSession(session,globals.trackedApplications[i]);
         }
-    };
+    }
+}
+
+function getUserSessions(userid,from_db=false,sendResponse=null) {
+    if (!from_db) {
+        // fake ajax
+        var res = {
+            status: 'success',
+            data: globals.userSessions,
+            message: 'getSessions'
+        }
+        if (sendResponse !== null) {
+            console.log("Resp sent, data loaded from local storage");
+            sendResponse(res);
+        }
+        return
+    }
+
+    // Otherwise grab from DB
+    var url = globals.baseUrl+'/api/1.0/session?extension_id='+userid; 
+    var http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.setRequestHeader("Accept", "application/json");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            if (sendResponse !== null) {
+                console.log("Resp sent, data loaded from DB");
+                sendResponse(res);
+            }
+            globals.userSessions = res.data;
+        }
+    }
+    http.send(null);
 }
 
 // Execution/Listeners
@@ -237,6 +302,16 @@ chrome.storage.sync.get('userid', function(items) {
 chrome.tabs.onUpdated.addListener(collect_tabs);
 chrome.history.onVisited.addListener(startSession);
 chrome.tabs.onRemoved.addListener(stopSession);
+
+
+
+
+
+// if session is timing and we add an app, DB will reload, overwriting locally-stored timing info
+
+// getUserSessions() 
+    // - if from_db, make GET call select * from session where extension_id = $1
+    // - if not, set globals.userSessions
 
 
 
