@@ -1,15 +1,17 @@
 // TO DO:
+    // - Session history/analytics tab
+        // queries
+        // graph
+    // Add "pause" functionality to sessions, e.g. site is open but tab is not active
+    // Clear "Add a Site" form inputs on submission
+    // Delete app (and all sessions)
+    // Modify existing app name/url
+
+// DONE:
     // - Add locally-stored live session info to DOM on popup, e.g.
         // Sessions today: 3
         // In session: Yes
         // Active time: 00:00:35
-    // Add "pause" functionality to sessions, e.g. site is open but tab is not active
-    // - Clear "Add a Site" form inputs on submission
-    // - Session history/analytics tab
-        // queries
-        // graph
-
-// DONE:
     // - Change getApps() to return local globals.trackedApplications
         // 1. Extension loads: get all user apps from the db
         // 2. Popup loads: get all user apps from locally-stored
@@ -302,17 +304,6 @@ chrome.storage.sync.get('userid', function(items) {
 chrome.tabs.onUpdated.addListener(collect_tabs);
 chrome.history.onVisited.addListener(startSession);
 chrome.tabs.onRemoved.addListener(stopSession);
-
-
-
-
-
-// if session is timing and we add an app, DB will reload, overwriting locally-stored timing info
-
-// getUserSessions() 
-    // - if from_db, make GET call select * from session where extension_id = $1
-    // - if not, set globals.userSessions
-
 
 
 
