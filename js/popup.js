@@ -1,23 +1,9 @@
-function msToTime(duration) {
-    var milliseconds = parseInt((duration%1000)/100)
-        , seconds = parseInt((duration/1000)%60)
-        , minutes = parseInt((duration/(1000*60))%60)
-        , hours = parseInt((duration/(1000*60*60))%24);
-
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-    return hours + ":" + minutes + ":" + seconds;
-}
-
 function countUp(i,appId) {
     var count = setInterval(function () {
         i += 1000;
         document.getElementById(appId+"_active_time").innerHTML = "<b>Active Time:</b> " + msToTime(i);
     }, 1000);
 }
-
 
 function setAppsOnDom(apps) {
     var html='';

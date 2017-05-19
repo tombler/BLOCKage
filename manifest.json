@@ -2,7 +2,7 @@
   "manifest_version": 2,
 
   "name": "TOTAL BLOCKage",
-  "description": "Tally times visited Facebook or Gmail.",
+  "description": "Website & application tracker.",
   "version": "1.0",
 
   "browser_action": {
@@ -11,7 +11,10 @@
   },
   "background": {
     "scripts": [
-      "background.js"
+      "js/util.js",
+      "js/ajax.js",
+      "js/globals.js",
+      "js/background.js"
     ],
     "persistent": true
   },
