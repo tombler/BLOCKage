@@ -64,90 +64,58 @@ function setAppsOnDom(apps) {
     document.getElementById('analytics_app').innerHTML = analytics_opts_html;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+function setChartsOnDOM(chartData) {
+    var line_colors = [
+        'rgba(255,99,132,1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+    ];
+    // as soon as DOM loads, grab daily session data for past week and load into a chart
+    for (var i = 0; i < chartData.datasets.length; i++) {
+        chartData.datasets[i].fill = false;
+        chartData.datasets[i].borderColor = line_colors[i];
+        chartData.datasets[i].borderWidth = 3;
+    };
+    // console.log(chartData);
 
-    var ctx = document.getElementById("myChart");
+    var ctx = document.getElementById("dailySessions");
     var myChart = new Chart(ctx, {
         type: 'line',
-        data: {
-            labels: ["5/12", "5/13", "5/14", "5/15", "5/16", "5/17", "5/18"],
-            datasets: [
-                {
-                    label: "My First dataset",
-                    // backgroundColor: [
-                    //     'rgba(255, 99, 132, 0.2)',
-                    //     'rgba(54, 162, 235, 0.2)',
-                    //     'rgba(255, 206, 86, 0.2)',
-                    //     'rgba(75, 192, 192, 0.2)',
-                    //     'rgba(153, 102, 255, 0.2)',
-                    //     'rgba(255, 159, 64, 0.2)'
-                    // ],
-                    borderColor: [
-                        'rgba(255,99,132,1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',
-                        'rgba(255, 159, 64, 1)'
-                    ],
-                    borderWidth: 1,
-                    fill:false,
-                    data: [65, 59, 80, 81, 56, 55, 40],
-                }
-            ]
-        },
-        // data: {
-        //     labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-        //     datasets: [{
-        //         label: '# of Votes',
-        //         data: [12, 19, 3, 5, 2, 3]
-        //         backgroundColor: [
-        //             'rgba(255, 99, 132, 0.2)',
-        //             'rgba(54, 162, 235, 0.2)',
-        //             'rgba(255, 206, 86, 0.2)',
-        //             'rgba(75, 192, 192, 0.2)',
-        //             'rgba(153, 102, 255, 0.2)',
-        //             'rgba(255, 159, 64, 0.2)'
-        //         ],
-        //         borderColor: [
-        //             'rgba(255,99,132,1)',
-        //             'rgba(54, 162, 235, 1)',
-        //             'rgba(255, 206, 86, 1)',
-        //             'rgba(75, 192, 192, 1)',
-        //             'rgba(153, 102, 255, 1)',
-        //             'rgba(255, 159, 64, 1)'
-        //         ],
-        //         borderWidth: 1
-        //     }]
-        // },
+        data: chartData,
         options: {
             scales: {
-                // xAxes: [{
-                //     type: 'time',
-                //     unit: 'day',
-                //     unitStepSize: 1,
-                //     time: {
-                //         displayFormats: {
-                //             'day': 'MMM DD'
-                //         }
-                //     }
-                // }],
                 yAxes: [{
                   ticks: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    stepSize: 1
                   }
                 }]
             }
         }
     });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // to-do: combine all DOM-load messages into a single message sent to background.js
 
     // as soon as DOM loads, grab the user's apps and set them in popup.html
     chrome.runtime.sendMessage({msg:'getApps'},function(resp) {
-        console.log(resp);
         if (resp.status === 'success') {
             setAppsOnDom(resp.data);
         }
     });
+    
+    chrome.runtime.sendMessage({msg:'getCharts'},function(resp) {
+        if (resp.status === 'success') {
+            console.log(resp.data);
+            setChartsOnDOM(resp.data);
+        }
+    });
+    
 
     var addApp = document.getElementById("addApp");
     addApp.onclick = function(e) { 

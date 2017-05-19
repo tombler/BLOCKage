@@ -250,6 +250,31 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
     http.send(null);
 }
 
+function getDailySessions(userid,from_db=false,sendResponse=null) {
+    if (!from_db) {
+        console.log("not retrieving daily sessions from db");
+        return
+    }
+
+    // Otherwise grab from DB
+    var url = globals.baseUrl+'/api/1.0/session/daily?extension_id='+userid; 
+    var http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.setRequestHeader("Accept", "application/json");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            if (sendResponse !== null) {
+                console.log("Resp sent, daily sessions loaded from DB");
+                sendResponse(res);
+            }
+            // can set globals.dailySessions here
+        }
+    }
+    http.send(null);
+}
+
 // Execution/Listeners
 
 // popup.html DOM interactions
@@ -273,6 +298,15 @@ chrome.extension.onMessage.addListener(function(message, messageSender, sendResp
                 extension_id: userid
             }
             addApp(appData, sendResponse);
+        });
+    }
+
+    if (message.msg === 'getCharts') {
+        chrome.storage.sync.get('userid', function(items) {
+            var userid = items.userid;
+            // get apps from local storage to avoid DB call
+            // pass sendResponse so getUserApps() can send the data to popup.js after loading
+            getDailySessions(userid,true,sendResponse);
         });
     }
 
