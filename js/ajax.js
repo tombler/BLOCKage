@@ -13,7 +13,7 @@ function authUser(userData) {
             // DOM doesn't need this data
             chrome.runtime.sendMessage(res);
             console.log(res);
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -50,7 +50,7 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             globals.trackedApplications = res.data;
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -69,7 +69,7 @@ function addApp(appData,sendResponse) {
             var res = JSON.parse(http.responseText);
             // must reload from DB, so 2nd arg = true
             getUserApps(appData.extension_id,true,sendResponse);
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -97,7 +97,7 @@ function updateApp(appData,sendResponse=null) {
                     // sendResponse fires updated app data back to DOM
                 getUserApps(appData.extension_id,true,sendResponse);
             }
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -116,7 +116,7 @@ function saveSession(session,appData) {
             var res = JSON.parse(http.responseText);
             updateApp(appData);
             globals.userSessions = res.data;
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -152,7 +152,7 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             globals.userSessions = res.data;
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
@@ -179,7 +179,7 @@ function getDailySessions(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             // can set globals.dailySessions here
-        } else {
+        } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
     }
