@@ -13,6 +13,8 @@ function authUser(userData) {
             // DOM doesn't need this data
             chrome.runtime.sendMessage(res);
             console.log(res);
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(data);
@@ -48,6 +50,8 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             globals.trackedApplications = res.data;
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(null);
@@ -65,6 +69,8 @@ function addApp(appData,sendResponse) {
             var res = JSON.parse(http.responseText);
             // must reload from DB, so 2nd arg = true
             getUserApps(appData.extension_id,true,sendResponse);
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(data);
@@ -91,6 +97,8 @@ function updateApp(appData,sendResponse=null) {
                     // sendResponse fires updated app data back to DOM
                 getUserApps(appData.extension_id,true,sendResponse);
             }
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(data);
@@ -108,6 +116,8 @@ function saveSession(session,appData) {
             var res = JSON.parse(http.responseText);
             updateApp(appData);
             globals.userSessions = res.data;
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(data);
@@ -142,6 +152,8 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             globals.userSessions = res.data;
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(null);
@@ -167,6 +179,8 @@ function getDailySessions(userid,from_db=false,sendResponse=null) {
                 sendResponse(res);
             }
             // can set globals.dailySessions here
+        } else {
+            console.log("Error:",http.responseText);
         }
     }
     http.send(null);
