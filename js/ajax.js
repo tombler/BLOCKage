@@ -12,7 +12,6 @@ function authUser(userData) {
             // message goes nowhere b/c popup.js isn't listening
             // DOM doesn't need this data
             chrome.runtime.sendMessage(res);
-            console.log(res);
         } else if (http.status != 200) {
             console.log("Error:",http.responseText);
         }
@@ -29,7 +28,7 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
             message: 'getApps'
         }
         if (sendResponse !== null) {
-            console.log("Resp sent, data loaded from local storage");
+            
             sendResponse(res);
         }
         return
@@ -45,8 +44,6 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
             if (sendResponse !== null) {
-                console.log("Resp sent, data loaded from DB");
-                console.log(res);
                 sendResponse(res);
             }
             globals.trackedApplications = res.data;
@@ -132,7 +129,7 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
             message: 'getSessions'
         }
         if (sendResponse !== null) {
-            console.log("Resp sent, data loaded from local storage");
+            
             sendResponse(res);
         }
         return
@@ -148,7 +145,6 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
             if (sendResponse !== null) {
-                console.log("Resp sent, data loaded from DB");
                 sendResponse(res);
             }
             globals.userSessions = res.data;
@@ -161,7 +157,6 @@ function getUserSessions(userid,from_db=false,sendResponse=null) {
 
 function getDailySessions(userid,from_db=false,sendResponse=null) {
     if (!from_db) {
-        console.log("not retrieving daily sessions from db");
         return
     }
 
@@ -175,7 +170,6 @@ function getDailySessions(userid,from_db=false,sendResponse=null) {
         if(http.readyState == 4 && http.status == 200) {
             var res = JSON.parse(http.responseText);
             if (sendResponse !== null) {
-                console.log("Resp sent, daily sessions loaded from DB");
                 sendResponse(res);
             }
             // can set globals.dailySessions here
