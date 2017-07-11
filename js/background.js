@@ -94,6 +94,10 @@ chrome.extension.onMessage.addListener(function(message, messageSender, sendResp
         });
     }
 
+    if (message.msg === 'getPresets') {
+        getPresets(sendResponse);
+    }
+
     if (message.msg === 'addApp') {
         chrome.storage.sync.get('userid', function(items) {
             var userid = items.userid;

@@ -47,7 +47,18 @@ function setAppsOnDom(apps) {
         analytics_opts_html += '<option>No apps available</option>';
     }
     document.getElementById('myapps').innerHTML = html;
-    document.getElementById('analytics_app').innerHTML = analytics_opts_html;
+    // document.getElementById('analytics_app').innerHTML = analytics_opts_html;
+}
+
+function setPresetsOnDOM(presetData) {
+    var html='';
+    html += '<option selected>Select a preset</option>'
+    for (var i = 0; i < presetData.length; i++) {
+        html += '<option value="' + presetData[i].base_url + '">'
+        html += presetData[i].display_name
+        html += '</option>'
+    };
+    document.getElementById('sitePresets').innerHTML = html;
 }
 
 function setChartsOnDOM(chartData) {
@@ -94,6 +105,13 @@ document.addEventListener('DOMContentLoaded', function () {
             setAppsOnDom(resp.data);
         }
     });
+
+    chrome.runtime.sendMessage({msg:'getPresets'},function(resp) {
+        console.log(resp)
+        if (resp.status === 'success') {
+            setPresetsOnDOM(resp.data);
+        }
+    });
     
     chrome.runtime.sendMessage({msg:'getCharts'},function(resp) {
         if (resp.status === 'success') {
@@ -124,10 +142,33 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
-    var getAnalytics = document.getElementById("getAnalytics");
-    getAnalytics.onclick = function(e) { 
+    var addAppFromPreset = document.getElementById("addAppFromPreset");
+    addAppFromPreset.onclick = function(e) { 
         e.preventDefault();
-        console.log("retrieving analytics....");
+        console.log('adding app from preset')
+
+        var preset = document.getElementById('sitePresets')
+        var data = {
+            name: preset.options[preset.selectedIndex].innerText,
+            url: preset.value
+        }
+        chrome.runtime.sendMessage({msg:'addApp',data: data},function(resp) {
+            // in background.js: 
+                // app will be added to DB
+                // if success, getUserApps(userid,true) will run, retrieving user apps from DB
+                // if success from ^^, response will be sent here, and we click DOM element to display 
+            if (resp.status === 'success') {
+                preset.value = '';
+                setAppsOnDom(resp.data);
+                document.getElementById('myAppsAnchor').click();
+            }
+        });
     };
+
+    // var getAnalytics = document.getElementById("getAnalytics");
+    // getAnalytics.onclick = function(e) { 
+    //     e.preventDefault();
+    //     console.log("retrieving analytics....");
+    // };
 
 });

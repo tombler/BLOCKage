@@ -54,6 +54,25 @@ function getUserApps(userid,from_db=false,sendResponse=null) {
     http.send(null);
 }
 
+function getPresets(sendResponse) {
+    var url = globals.baseUrl+'/api/1.0/presets'; 
+    var http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.setRequestHeader("Accept", "application/json");
+    http.onreadystatechange = function()
+    {
+        if(http.readyState == 4 && http.status == 200) {
+            var res = JSON.parse(http.responseText);
+            if (sendResponse !== null) {
+                sendResponse(res);
+            }
+        } else if (http.status != 200) {
+            console.log("Error:",http.responseText);
+        }
+    }
+    http.send(null);
+}
+
 function addApp(appData,sendResponse) {
     var url = globals.baseUrl+'/api/1.0/application'; 
     var http = new XMLHttpRequest();

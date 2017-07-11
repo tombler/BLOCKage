@@ -64,8 +64,18 @@
               <div id="collapseAddApp" class="collapse" role="tabpanel" aria-labelledby="headingAddApp">
                 <div class="card-block">
                   <form>
+                    <h6>Choose a site from our presets</h6>
                     <div class="form-group">
-                      <label for="site_name">Nickname</label>
+                      <select class="form-control" id="sitePresets">
+                      </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="addAppFromPreset">Track It!</button>
+                  </form>
+                  <hr>
+                  <form>
+                    <h6>Or add your own!</h6>
+                    <label for="site_name">Nickname</label>
+                    <div class="form-group">
                       <input type="text" class="form-control" id="site_name" aria-describedby="site_name_help">
                       <small id="site_name_help" class="form-text text-muted">Common name for the site, e.g. "Facebook"</small>
                     </div>
@@ -92,7 +102,7 @@
                 <div class="card-block">
                   <canvas id="dailySessions" width="300" height="300"></canvas>
                   <hr>
-                  <div style="height: 300px; width: 90%; border: 1px solid black">Graph 2</div>
+                  <!-- <div style="height: 300px; width: 90%; border: 1px solid black">Graph 2</div>
                   <hr>
                   <form>
                     <div class="form-group" data-provide="datepicker">
@@ -106,7 +116,7 @@
                       </select>
                     </div>
                     <button type="submit" class="btn btn-primary" id="getAnalytics">Crunch!</button>
-                  </form>
+                  </form> -->
                 </div> <!-- cardblock -->
               </div> <!-- collapseAnalytics -->
             </div> <!-- card -->
