@@ -23,10 +23,9 @@
 function startSession(app) {
     // onVisited fires multiple times for a site ("fake page loads")
     // setting in_session here ensures we only start one session for this app and user at a time
-    var now = new Date();
     app.in_session = true;
     app.paused = false;
-    app.session_start = now;
+    app.session_start = new LocalTime();
     app.duration = 0;
     app.check_count = 1;
     // saves app state to DB
@@ -44,7 +43,7 @@ function stopSession(app) {
     // calculate time
     // create session in db w/ start time + end time + duration
     var start = new Date(app.session_start);
-    var stop = new Date();
+    var stop = new LocalTime();
     // var duration = msToTime(stop - start);
     var duration = stop - start;
     var application_id = app.id;

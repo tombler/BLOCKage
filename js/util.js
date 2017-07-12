@@ -24,3 +24,13 @@ function msToTime(duration) {
 
     return hours + ":" + minutes + ":" + seconds;
 }
+
+
+function LocalTime() {
+    var d = new Date();
+    d.setHours(d.getHours() - d.getTimezoneOffset() / 60);
+    return d;
+}
+
+LocalTime.prototype = Object.create(Date.prototype);
+
